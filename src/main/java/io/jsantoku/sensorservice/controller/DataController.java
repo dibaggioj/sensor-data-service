@@ -28,17 +28,7 @@ public class DataController {
         DataPoint datapoint = createRequest.buildDataPoint();
         PutItemResponse result = datapoint.addToTable();
         if (result.sdkHttpResponse().isSuccessful()) {
-            String key = "";
-            Optional<String> device = result.getValueForField(DataPoint.FIELD_DEVICE, String.class);
-            if (device.isPresent()) {
-                key += device.get() + "-";
-            }
-
-            Optional<Long> timestamp = result.getValueForField(DataPoint.FIELD_TIMESTAMP, Long.class);
-            if (timestamp.isPresent()) {
-                key += timestamp.get();
-            }
-
+            String key = datapoint.getDevice() + "-" + datapoint.getTimestamp();
             CreateResponse response = new CreateResponse(key);
             return ResponseEntity.ok(response);
         } else {

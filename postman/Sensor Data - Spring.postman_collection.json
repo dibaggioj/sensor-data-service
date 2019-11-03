@@ -1,0 +1,108 @@
+{
+	"info": {
+		"name": "Sensor Data - Spring",
+		"_postman_id": "8ebe8a46-1ec3-facd-2563-f5a32d824b81",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Greeting Test",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "fa107cee-fdf0-11e9-b335-362b9e155667",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://localhost:8080/api/rest/sensor-service/greeting",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"rest",
+						"sensor-service",
+						"greeting"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Create Data",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "3b8a254a-9330-4875-8d38-4d8af3f1f3a0",
+						"type": "text/javascript",
+						"exec": [
+							"pm.globals.set(\"timestamp\", new Date().getTime());"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "fa107cee-fdf0-11e9-b335-362b9e155667",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"device\": \"ESP32\",\n\t\"timestamp\": {{timestamp}},\n\t\"temperature\": {\n\t\t\"device\": \"DHT22\",\n\t\t\"value\": 69.1,\n\t\t\"unit\": \"F\",\n\t\t\"location\": \"home\"\n\t},\n\t\"humidity\": {\n\t\t\"device\": \"DHT22\",\n\t\t\"value\": 0.86,\n\t\t\"location\": \"home\"\n\t}\n}\n"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/rest/sensor-service/data",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"rest",
+						"sensor-service",
+						"data"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
