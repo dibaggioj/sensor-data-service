@@ -13,7 +13,7 @@ John DiBaggio
 ### MAC
 
 #### Java
-1. Install Java 8
+1. Install latest Java SE 8 JDK
 
 #### Gradle
 1. Install Gradle per [Installation Instructions](https://gradle.org/install) 
