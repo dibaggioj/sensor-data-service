@@ -1,24 +1,28 @@
 package io.jsantoku.sensorservice.controller;
 
+import com.amazonaws.services.dynamodbv2.model.PutItemResult;
 import io.jsantoku.sensorservice.model.DataPoint;
 import io.jsantoku.sensorservice.model.request.CreateRequest;
 import io.jsantoku.sensorservice.model.response.CreateResponse;
 import io.jsantoku.sensorservice.model.response.ErrorResponse;
-import io.jsantoku.sensorservice.util.DbClient;
-import org.springframework.http.HttpStatus;
+import io.jsantoku.sensorservice.service.DataPointService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 
-import java.util.Optional;
-
 @RestController
 public class DataController {
 
+    @Autowired
+    private DynamoDbClient dynamoDbClient;
+
+    @Autowired
+    private DataPointService dataPointService;
+
     @RequestMapping(path = "/data/{id}", method = RequestMethod.GET)
     public ResponseEntity<?> getDataPoint(@PathVariable("id") String id) {
-        DynamoDbClient ddb = DbClient.build();
         // TODO: implement
         throw new UnsupportedOperationException("Method not yet implemented");
     }
@@ -26,7 +30,7 @@ public class DataController {
     @RequestMapping(path = "/data", method = RequestMethod.POST)
     public ResponseEntity<?> createDataPoint(@RequestBody CreateRequest createRequest) {
         DataPoint datapoint = createRequest.buildDataPoint();
-        PutItemResponse result = datapoint.addToTable();
+        PutItemResult result = dataPointService.create(datapoint);
         if (result.sdkHttpResponse().isSuccessful()) {
             String key = datapoint.getDevice() + "-" + datapoint.getTimestamp();
             CreateResponse response = new CreateResponse(key);
@@ -41,14 +45,12 @@ public class DataController {
 
     @RequestMapping(path = "/data/{id}", method = RequestMethod.PUT)
     public ResponseEntity<?> updateDataPoint(@PathVariable("id") String id) {
-        DynamoDbClient ddb = DbClient.build();
         // TODO: implement
         throw new UnsupportedOperationException("Method not yet implemented");
     }
 
     @RequestMapping(path = "/data/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteDataPoint(@PathVariable("id") String id) {
-        DynamoDbClient ddb = DbClient.build();
         // TODO: implement
         throw new UnsupportedOperationException("Method not yet implemented");
     }

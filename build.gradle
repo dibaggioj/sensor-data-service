@@ -28,9 +28,10 @@ targetCompatibility = 1.8
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.springframework.boot:spring-boot-starter-security")
+    compile('org.springframework.data:spring-data-commons')
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('com.jayway.jsonpath:json-path')
-    implementation platform('software.amazon.awssdk:bom:2.5.29')
-    implementation 'software.amazon.awssdk:dynamodb'
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.651')
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb'
 }
 

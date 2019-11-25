@@ -1,18 +1,19 @@
 package io.jsantoku.sensorservice.model;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import com.amazonaws.services.dynamodbv2.model.*;
 import io.jsantoku.sensorservice.model.data.Humidity;
 import io.jsantoku.sensorservice.model.data.Temperature;
-import io.jsantoku.sensorservice.util.DbClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+@DynamoDBTable(tableName = DataPoint.TABLE_NAME)
 public class DataPoint implements Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataPoint.class);
@@ -27,6 +28,9 @@ public class DataPoint implements Serializable {
     private long timestamp;
     private Temperature temperature;
     private Humidity humidity;
+
+    @Autowired
+    private AmazonDynamoDB amazonDynamoDB;
 
     public DataPoint() { }
 
@@ -51,6 +55,7 @@ public class DataPoint implements Serializable {
         this.humidity = humidity;
     }
 
+    @DynamoDBHashKey(attributeName = FIELD_DEVICE)
     public String getDevice() {
         return device;
     }
@@ -59,6 +64,7 @@ public class DataPoint implements Serializable {
         this.device = device;
     }
 
+    @DynamoDBRangeKey(attributeName = FIELD_TIMESTAMP)
     public long getTimestamp() {
         return timestamp;
     }
@@ -67,6 +73,7 @@ public class DataPoint implements Serializable {
         this.timestamp = timestamp;
     }
 
+    @DynamoDBAttribute
     public Temperature getTemperature() {
         return temperature;
     }
@@ -75,6 +82,7 @@ public class DataPoint implements Serializable {
         this.temperature = temperature;
     }
 
+    @DynamoDBFlattened
     public Humidity getHumidity() {
         return humidity;
     }
@@ -83,95 +91,37 @@ public class DataPoint implements Serializable {
         this.humidity = humidity;
     }
 
-    public static boolean tableExists() {
-        DynamoDbClient ddb = DbClient.build();
-
-        ListTablesRequest request = ListTablesRequest.builder().build();
-        ListTablesResponse response = ddb.listTables(request);
-
-        return response.tableNames().contains(TABLE_NAME);
-    }
-
-    public static CreateTableResponse initTable() throws DynamoDbException {
-        if (tableExists()) {
-            LOG.info("Table {} already exists \n", TABLE_NAME);
-            return null;
-        }
-
-        LOG.info("Creating table {}\n", TABLE_NAME);
-
-        CreateTableRequest request = CreateTableRequest.builder()
-                .attributeDefinitions(
-                        buildAttributeDefinitions()
-                )
-                .keySchema(
-                        KeySchemaElement.builder()      // Primary key
-                                .attributeName(FIELD_DEVICE)
-                                .keyType(KeyType.HASH)
-                                .build(),
-                        KeySchemaElement.builder()      // Sort Key
-                                .attributeName(FIELD_TIMESTAMP)
-                                .keyType(KeyType.RANGE)
-                                .build()
-                )
-                .globalSecondaryIndexes(
+    public static CreateTableRequest buildTableRequest() {
+        return new CreateTableRequest()
+                .withAttributeDefinitions(buildAttributeDefinitions())
+                .withKeySchema(new KeySchemaElement()      // Primary key
+                        .withAttributeName(FIELD_DEVICE)
+                        .withKeyType(KeyType.HASH),
+                new KeySchemaElement()       // Sort Key
+                        .withAttributeName(FIELD_TIMESTAMP)
+                        .withKeyType(KeyType.RANGE))
+                .withGlobalSecondaryIndexes(
                         Temperature.buildSecondaryIndex(),
                         Humidity.buildSecondaryIndex()
                 )
-                .provisionedThroughput(
-                        ProvisionedThroughput.builder()
-                                .readCapacityUnits(5L)
-                                .writeCapacityUnits(5L).build())
-                .tableName(TABLE_NAME)
-                .build();
-
-        DynamoDbClient ddb = DbClient.build();
-
-        CreateTableResponse result = ddb.createTable(request);
-        LOG.info("Successfully created table {}\n", TABLE_NAME);
-
-        return result;
+                .withProvisionedThroughput(new ProvisionedThroughput()
+                                .withReadCapacityUnits(5L)
+                                .withWriteCapacityUnits(5L)
+                )
+                .withTableName(TABLE_NAME);
     }
 
     private static List<AttributeDefinition> buildAttributeDefinitions() {
         List<AttributeDefinition> attributeDefinitions = new ArrayList<>();
-        attributeDefinitions.add(AttributeDefinition.builder()
-                .attributeName(FIELD_DEVICE)
-                .attributeType(ScalarAttributeType.S)
-                .build());
-        attributeDefinitions.add(AttributeDefinition.builder()
-                .attributeName(FIELD_TIMESTAMP)
-                .attributeType(ScalarAttributeType.N)
-                .build());
+        attributeDefinitions.add(new AttributeDefinition()
+                .withAttributeName(FIELD_DEVICE)
+                .withAttributeType(ScalarAttributeType.S));
+        attributeDefinitions.add(new AttributeDefinition()
+                .withAttributeName(FIELD_TIMESTAMP)
+                .withAttributeType(ScalarAttributeType.N));
         attributeDefinitions.addAll(Temperature.getAttributeDefinitions());
         attributeDefinitions.addAll(Humidity.getAttributeDefinitions());
         return attributeDefinitions;
     }
 
-    public PutItemResponse addToTable() {
-        HashMap<String, AttributeValue> item_values = new HashMap<>();
-
-        ArrayList<String[]> extra_fields = new ArrayList<>();
-
-        item_values.put(FIELD_DEVICE, AttributeValue.builder().s(this.device).build());
-        item_values.put(FIELD_TIMESTAMP, AttributeValue.builder().n(Long.toString(this.timestamp)).build());
-
-        if (this.temperature != null) {
-            this.temperature.addFieldsToTableItem(item_values);
-        }
-        if (this.humidity != null) {
-            this.humidity.addFieldsToTableItem(item_values);
-        }
-
-        DynamoDbClient ddb = DynamoDbClient.create();
-        PutItemRequest request = PutItemRequest.builder()
-                .tableName(TABLE_NAME)
-                .item(item_values)
-                .build();
-
-        PutItemResponse result = ddb.putItem(request);
-
-        return result;
-
-    }
 }

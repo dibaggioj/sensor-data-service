@@ -1,12 +1,14 @@
 package io.jsantoku.sensorservice.model.data;
 
-import software.amazon.awssdk.services.dynamodb.model.*;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import com.amazonaws.services.dynamodbv2.model.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+@DynamoDBDocument
 public class Humidity implements Serializable {
 
     private static final String DELIMITER = "-";
@@ -27,6 +29,7 @@ public class Humidity implements Serializable {
         this.location = location;
     }
 
+    @DynamoDBIndexHashKey(attributeName = FIELD_DEVICE)
     public String getDevice() {
         return device;
     }
@@ -35,14 +38,7 @@ public class Humidity implements Serializable {
         this.device = device;
     }
 
-    public float getValue() {
-        return value;
-    }
-
-    public void setValue(float value) {
-        this.value = value;
-    }
-
+    @DynamoDBIndexRangeKey(attributeName = FIELD_LOCATION)
     public String getLocation() {
         return location;
     }
@@ -51,57 +47,62 @@ public class Humidity implements Serializable {
         this.location = location;
     }
 
+    @DynamoDBAttribute(attributeName = FIELD_VALUE)
+    public float getValue() {
+        return value;
+    }
+
+    public void setValue(float value) {
+        this.value = value;
+    }
+
     public void addFieldsToTableItem(HashMap<String, AttributeValue> itemValues) {
-        itemValues.put(FIELD_DEVICE, AttributeValue.builder().s(this.device).build());
-        itemValues.put(FIELD_LOCATION, AttributeValue.builder().s(this.location).build());
-        itemValues.put(FIELD_VALUE, AttributeValue.builder().n(Float.toString(this.value)).build());
+        itemValues.put(FIELD_DEVICE, new AttributeValue().withS(this.device));
+        itemValues.put(FIELD_LOCATION, new AttributeValue().withS(this.location));
+        itemValues.put(FIELD_VALUE, new AttributeValue().withN(Float.toString(this.value)));
     }
 
     public static List<AttributeDefinition> getAttributeDefinitions() {
         List<AttributeDefinition> attributeDefinitions = new ArrayList<>();
-        attributeDefinitions.add(AttributeDefinition.builder()
-                .attributeName(FIELD_DEVICE)
-                .attributeType(ScalarAttributeType.S)
-                .build());
-        attributeDefinitions.add(AttributeDefinition.builder()
-                .attributeName(FIELD_LOCATION)
-                .attributeType(ScalarAttributeType.S)
-                .build());
+        attributeDefinitions.add(new AttributeDefinition()
+                .withAttributeName(FIELD_DEVICE)
+                .withAttributeType(ScalarAttributeType.S));
+        attributeDefinitions.add(new AttributeDefinition()
+                .withAttributeName(FIELD_LOCATION)
+                .withAttributeType(ScalarAttributeType.S));
 // Don't need attribute definitions for non-key fields
-//        attributeDefinitions.add(AttributeDefinition.builder()
-//                .attributeName(FIELD_VALUE)
-//                .attributeType(ScalarAttributeType.N)
-//                .build());
+//        attributeDefinitions.add(new AttributeDefinition()
+//                .withAttributeName(FIELD_VALUE)
+//                .withAttributeType(ScalarAttributeType.N));
+//        attributeDefinitions.add(new AttributeDefinition()
+//                .withAttributeName(FIELD_UNIT)
+//                .withAttributeType(ScalarAttributeType.S));
         return attributeDefinitions;
     }
 
     public static GlobalSecondaryIndex buildSecondaryIndex() {
-        return GlobalSecondaryIndex.builder()
-                .indexName(SECONDARY_INDEX_DESCRIPTION)
-                .keySchema(
-                        KeySchemaElement.builder()
-                                .attributeName(FIELD_DEVICE)
-                                .keyType(KeyType.HASH)
-                                .build(),
-                        KeySchemaElement.builder()
-                                .attributeName(FIELD_LOCATION)
-                                .keyType(KeyType.RANGE)
-                                .build()
+        return new GlobalSecondaryIndex()
+                .withIndexName(SECONDARY_INDEX_DESCRIPTION)
+                .withKeySchema(
+                        new KeySchemaElement()
+                                .withAttributeName(FIELD_DEVICE)
+                                .withKeyType(KeyType.HASH),
+                        new KeySchemaElement()
+                                .withAttributeName(FIELD_LOCATION)
+                                .withKeyType(KeyType.RANGE)
                 )
-                .projection(
-                        Projection.builder()
-                                .nonKeyAttributes(
+                .withProjection(
+                        new Projection()
+                                .withNonKeyAttributes(
                                         FIELD_VALUE
                                 )
-                                .projectionType(
+                                .withProjectionType(
                                         ProjectionType.INCLUDE
                                 )
-                                .build()
-                )
-                .provisionedThroughput(ProvisionedThroughput.builder()
-                        .readCapacityUnits(5L)
-                        .writeCapacityUnits(5L).build())
 
-                .build();
+                )
+                .withProvisionedThroughput(new ProvisionedThroughput()
+                        .withReadCapacityUnits(5L)
+                        .withWriteCapacityUnits(5L));
     }
 }
